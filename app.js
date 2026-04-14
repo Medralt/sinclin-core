@@ -1,6 +1,7 @@
 require('dotenv').config()
+global.fetch = global.fetch || require('node:undici').fetch
 const express=require('express')
-const fetch=require('node-fetch')
+const fetch=
 const fs=require('fs')
 const path=require('path')
 
