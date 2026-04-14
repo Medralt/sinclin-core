@@ -1,11 +1,18 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
 <meta charset='UTF-8'>
 <title>SINCLIN PRO</title>
-<link rel='stylesheet' href='css/style.css'>
+<style>
+body{font-family:Arial;background:#eef2f7;padding:30px}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+.card{background:#fff;padding:20px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,.1)}
+input,textarea{width:100%;padding:10px;margin:6px 0;border-radius:6px;border:1px solid #ccc}
+button{padding:10px;border:none;border-radius:6px;cursor:pointer;margin-right:5px}
+.primary{background:#007bff;color:#fff}
+.voice{background:#28a745;color:#fff}
+</style>
 </head>
-
 <body>
 
 <h1>SINCLIN PRO</h1>
@@ -13,31 +20,72 @@
 <div class='grid'>
 
 <div class='card'>
-<h2>Cadastro</h2>
+<h3>Cadastro</h3>
 <input id='nome' placeholder='Nome'>
 <input id='idade' placeholder='Idade'>
 <input id='sexo' placeholder='Sexo'>
-<button onclick='cadastrar()'>Cadastrar</button>
+<button class='primary' onclick='cadastrar()'>Cadastrar</button>
 </div>
 
 <div class='card'>
-<h2>IA Clínica</h2>
+<h3>IA Cl?nica</h3>
 <textarea id='pergunta'></textarea>
-<button onclick='enviar()'>Enviar</button>
-<button onclick='voz()'>🎤 Voz</button>
+<button class='primary' onclick='enviar()'>Enviar</button>
+<button class='voice' onclick='voz()'>??</button>
 </div>
 
 <div class='card'>
-<h2>Pacientes</h2>
+<h3>Pacientes</h3>
 <div id='lista'></div>
 </div>
 
 </div>
 
-<h2>Resposta</h2>
+<h3>Resposta</h3>
 <div id='resposta'></div>
 
-<script src='/js/app.js'></script>
+<script>
+async function carregar(){
+ const r=await fetch('/api/pacientes')
+ const d=await r.json()
+ lista.innerHTML=d.map(p=>'<div>'+p.nome+' '+p.idade+'</div>').join('')
+}
+
+async function cadastrar(){
+ await fetch('/api/pacientes',{
+  method:'POST',
+  headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({nome:nome.value,idade:idade.value,sexo:sexo.value})
+ })
+ carregar()
+}
+
+async function enviar(){
+ const texto=pergunta.value
+ const r=await fetch('/api/ia',{
+  method:'POST',
+  headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({texto})
+ })
+ const d=await r.json()
+ resposta.innerText=d.resposta
+
+ speechSynthesis.cancel()
+ speechSynthesis.speak(new SpeechSynthesisUtterance(d.resposta))
+}
+
+function voz(){
+ const rec=new (window.SpeechRecognition||window.webkitSpeechRecognition)()
+ rec.lang='pt-BR'
+ rec.start()
+ rec.onresult=e=>{
+  pergunta.value=e.results[0][0].transcript
+  enviar()
+ }
+}
+
+window.onload=carregar
+</script>
 
 </body>
 </html>

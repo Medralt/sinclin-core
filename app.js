@@ -1,65 +1,53 @@
-﻿const express = require('express');
-const fs = require('fs');
-const path = require('path');
+require('dotenv').config()
+const express=require('express')
+const fetch=require('node-fetch')
+const fs=require('fs')
+const path=require('path')
 
-const app = express();
+const app=express()
+app.use(express.json())
+app.use(express.static(path.join(__dirname,'public')))
 
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+const DB='db.json'
+let pacientes=[]
+try{pacientes=JSON.parse(fs.readFileSync(DB,'utf8'))}catch{pacientes=[]}
 
-const DB = path.join(__dirname,'db.json');
-if(!fs.existsSync(DB)) fs.writeFileSync(DB,'[]');
+function salvar(){fs.writeFileSync(DB,JSON.stringify(pacientes,null,2))}
 
-let pacientes = JSON.parse(fs.readFileSync(DB));
-
-function salvar(){
- fs.writeFileSync(DB, JSON.stringify(pacientes,null,2));
-}
-
-app.get('/api/pacientes',(req,res)=>res.json(pacientes));
+app.get('/api/pacientes',(req,res)=>res.json(pacientes))
 
 app.post('/api/pacientes',(req,res)=>{
- const p = {
-  id: Date.now(),
-  nome:req.body.nome,
-  idade:req.body.idade,
-  sexo:req.body.sexo,
-  historico:[],
-  biometria:{}
- };
- pacientes.push(p);
- salvar();
- res.json(p);
-});
+ const p={id:Date.now(),nome:req.body.nome,idade:req.body.idade,sexo:req.body.sexo}
+ pacientes.push(p);salvar();res.json(p)
+})
 
-app.post('/api/ia', async (req,res)=>{
+app.post('/api/ia',async(req,res)=>{
+ const texto=req.body.texto
 
  try{
-  const r = await fetch("https://api.openai.com/v1/chat/completions",{
-   method:"POST",
+  const r=await fetch('https://api.openai.com/v1/chat/completions',{
+   method:'POST',
    headers:{
-    "Content-Type":"application/json",
-    "Authorization":"Bearer "+process.env.OPENAI_API_KEY
+    'Content-Type':'application/json',
+    'Authorization':'Bearer '+process.env.OPENAI_API_KEY
    },
-   body: JSON.stringify({
-    model:"gpt-4.1-mini",
+   body:JSON.stringify({
+    model:'gpt-4o-mini',
     messages:[
-     {role:"system",content:"Sistema clínico SINCLIN. Seja direto e clínico."},
-     {role:"user",content:req.body.texto}
+     {role:'system',content:'IA SINCLIN avan?ada. Responda com racioc?nio cl?nico e intera??o real.'},
+     {role:'user',content:texto}
     ]
    })
-  });
+  })
 
-  const d = await r.json();
+  const d=await r.json()
 
-  res.json({
-    resposta: d.choices?.[0]?.message?.content || "sem resposta"
-  });
+  const resp=d.choices?.[0]?.message?.content || "IA sem retorno"
+  res.json({resposta:resp})
 
  }catch(e){
-  res.json({resposta:"IA indisponível"});
+  res.json({resposta:"IA erro interno"})
  }
+})
 
-});
-
-app.listen(3000);
+app.listen(3000)
