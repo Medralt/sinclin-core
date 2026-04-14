@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>SINCLIN ULTRA</title>
+
+<style>
+body {font-family:Arial; background:#f6f8fb; margin:0;}
+.sidebar {width:260px; position:fixed; height:100%; background:#fff; border-right:1px solid #ddd; padding:20px;}
+.main {margin-left:260px; padding:40px;}
+.card {background:#fff; padding:20px; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.05); margin-bottom:20px;}
+button {padding:10px; background:#2d8cff; color:#fff; border:none;}
+input {width:100%; padding:10px; margin:10px 0;}
+.fade {animation:fade 0.5s;}
+@keyframes fade {from{opacity:0}to{opacity:1}}
+</style>
+
+</head>
+<body>
+
+<div class="sidebar">
+<h2>SINCLIN</h2>
+<div onclick="nav('anamnese')">Anamnese</div>
+<div onclick="nav('ia')">IA Clínica</div>
+</div>
+
+<div class="main" id="app"></div>
+
+<script>
+
+let step=0;
+let respostas={};
+
+function nav(p){
+if(p==="anamnese"){render();}
+if(p==="ia"){analisar();}
+}
+
+function render(){
+let perguntas=[
+"Qual a queixa principal?",
+"Tempo do problema?",
+"Já fez procedimentos?"
+];
+
+if(step<perguntas.length){
+app.innerHTML = 
+<div class="card fade">
+<h2>\</h2>
+<input id="r">
+<button onclick="next()">Continuar</button>
+<button onclick="voz()">??</button>
+</div>;
+}else{
+app.innerHTML = 
+<div class="card fade">
+<h2>Anamnese concluída</h2>
+<button onclick="nav('ia')">Finalizar atendimento</button>
+</div>;
+}
+}
+
+function next(){
+respostas[step]=document.getElementById('r').value;
+step++;
+render();
+}
+
+function voz(){
+let rec=new(window.SpeechRecognition||window.webkitSpeechRecognition)();
+rec.lang='pt-BR';
+rec.start();
+rec.onresult=e=>{
+document.getElementById('r').value=e.results[0][0].transcript;
+};
+}
+
+async function analisar(){
+app.innerHTML="<div class='card'>Analisando...</div>";
+
+let res = await fetch('/sinclin-ai-clinico',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({respostas})
+});
+
+let data = await res.json();
+
+app.innerHTML=
+<div class="card fade">
+<h2>Resultado IA</h2>
+<p>\</p>
+</div>;
+
+speak(data.result);
+}
+
+function speak(t){
+speechSynthesis.speak(new SpeechSynthesisUtterance(t));
+}
+
+nav('anamnese');
+
+
+async function carregarPacientes(){
+let res = await fetch('/data/pacientes');
+let data = await res.json();
+
+let html = '<h2>Pacientes</h2><div class=\"card\">';
+
+data.forEach(p=>{
+html += '<div onclick=\"abrirPaciente(\\''+p.nome+'\\')\">'+p.nome+'</div>';
+});
+
+html += '</div>';
+app.innerHTML = html;
+}
+
+function abrirPaciente(nome){
+app.innerHTML = 
+<div class="card">
+<h2>\</h2>
+<button onclick="nav('anamnese')">Nova Anamnese</button>
+<button onclick="verProntuario('\')">Prontuário</button>
+</div>;
+}
+
+async function salvarFluxoCompleto(){
+let nome = prompt("Nome do paciente");
+
+await savePaciente(nome);
+await salvarAnamnese(respostas);
+
+let res = await fetch('/sinclin-ai-clinico',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({respostas})
+});
+
+let data = await res.json();
+
+await fetch('/data/prontuarios',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({
+nome:nome,
+respostas:respostas,
+analise:data.result,
+data:new Date()
+})
+});
+
+app.innerHTML = 
+<div class="card">
+<h2>Paciente salvo</h2>
+<p>\</p>
+</div>;
+}
+
+async function verProntuario(nome){
+let res = await fetch('/data/prontuarios');
+let data = await res.json();
+
+let html = '<h2>Prontuário</h2><div class=\"card\">';
+
+data.filter(p=>p.nome===nome).forEach(p=>{
+html += '<div class=\"item\">'+p.data+'<br>'+p.analise+'</div>';
+});
+
+html += '</div>';
+app.innerHTML = html;
+}
+
+
+let pacienteAtual = null;
+
+async function listarPacientes(){
+let res = await fetch('/data/pacientes');
+let data = await res.json();
+
+let html = '<h2>Pacientes</h2><div class=\"card\">';
+html += '<input placeholder=\"Novo paciente\" id=\"novoPaciente\"><button onclick=\"criarPaciente()\">Criar</button>';
+
+data.forEach(p=>{
+html += <div onclick=\"selecionarPaciente('\','\')\">\</div>;
+});
+
+html += '</div>';
+app.innerHTML = html;
+}
+
+async function criarPaciente(){
+let nome = document.getElementById('novoPaciente').value;
+
+let res = await fetch('/data/pacientes',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({nome})
+});
+
+let p = await res.json();
+pacienteAtual = p;
+
+listarPacientes();
+}
+
+function selecionarPaciente(id,nome){
+pacienteAtual = {id,nome};
+
+app.innerHTML = 
+<div class="card">
+<h2>\</h2>
+<button onclick="nav('anamnese')">Nova Anamnese</button>
+<button onclick="verProntuario('\')">Prontuário</button>
+</div>;
+}
+
+async function salvarFluxoCompleto(){
+if(!pacienteAtual){
+alert('Selecione paciente');
+return;
+}
+
+await salvarAnamnese(respostas);
+
+let res = await fetch('/sinclin-ai-clinico',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({respostas})
+});
+
+let data = await res.json();
+
+await fetch('/data/prontuarios',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({
+pacienteId:pacienteAtual.id,
+nome:pacienteAtual.nome,
+respostas,
+analise:data.result,
+data:new Date()
+})
+});
+
+await fetch('/data/financeiro',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({
+pacienteId:pacienteAtual.id,
+valor:500,
+tipo:'procedimento'
+})
+});
+
+await fetch('/data/estoque',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({
+item:'procedimento_utilizado',
+data:new Date()
+})
+});
+
+app.innerHTML = 
+<div class="card">
+<h2>Atendimento registrado</h2>
+<p>\</p>
+</div>;
+}
+
+async function verProntuario(id){
+let res = await fetch('/data/prontuarios');
+let data = await res.json();
+
+let html = '<h2>Prontuário</h2><div class=\"card timeline\">';
+
+data.filter(p=>p.pacienteId===id).forEach(p=>{
+html += <div class=\"item\"><b>\</b><br>\</div>;
+});
+
+html += '</div>';
+app.innerHTML = html;
+}
+
+</script>
+
+</body>
+</html>
+
+<script>
+
+async function savePaciente(nome){
+await fetch('/data/pacientes',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({nome})
+});
+}
+
+async function salvarAnamnese(respostas){
+await fetch('/data/prontuarios',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify(respostas)
+});
+}
+
+async function registrarFinanceiro(valor){
+await fetch('/data/financeiro',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({valor})
+});
+}
+
+async function baixarEstoque(item){
+await fetch('/data/estoque',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({item})
+});
+}
+
+
+async function carregarPacientes(){
+let res = await fetch('/data/pacientes');
+let data = await res.json();
+
+let html = '<h2>Pacientes</h2><div class=\"card\">';
+
+data.forEach(p=>{
+html += '<div onclick=\"abrirPaciente(\\''+p.nome+'\\')\">'+p.nome+'</div>';
+});
+
+html += '</div>';
+app.innerHTML = html;
+}
+
+function abrirPaciente(nome){
+app.innerHTML = 
+<div class="card">
+<h2>\</h2>
+<button onclick="nav('anamnese')">Nova Anamnese</button>
+<button onclick="verProntuario('\')">Prontuário</button>
+</div>;
+}
+
+async function salvarFluxoCompleto(){
+let nome = prompt("Nome do paciente");
+
+await savePaciente(nome);
+await salvarAnamnese(respostas);
+
+let res = await fetch('/sinclin-ai-clinico',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({respostas})
+});
+
+let data = await res.json();
+
+await fetch('/data/prontuarios',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({
+nome:nome,
+respostas:respostas,
+analise:data.result,
+data:new Date()
+})
+});
+
+app.innerHTML = 
+<div class="card">
+<h2>Paciente salvo</h2>
+<p>\</p>
+</div>;
+}
+
+async function verProntuario(nome){
+let res = await fetch('/data/prontuarios');
+let data = await res.json();
+
+let html = '<h2>Prontuário</h2><div class=\"card\">';
+
+data.filter(p=>p.nome===nome).forEach(p=>{
+html += '<div class=\"item\">'+p.data+'<br>'+p.analise+'</div>';
+});
+
+html += '</div>';
+app.innerHTML = html;
+}
+
+
+let pacienteAtual = null;
+
+async function listarPacientes(){
+let res = await fetch('/data/pacientes');
+let data = await res.json();
+
+let html = '<h2>Pacientes</h2><div class=\"card\">';
+html += '<input placeholder=\"Novo paciente\" id=\"novoPaciente\"><button onclick=\"criarPaciente()\">Criar</button>';
+
+data.forEach(p=>{
+html += <div onclick=\"selecionarPaciente('\','\')\">\</div>;
+});
+
+html += '</div>';
+app.innerHTML = html;
+}
+
+async function criarPaciente(){
+let nome = document.getElementById('novoPaciente').value;
+
+let res = await fetch('/data/pacientes',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({nome})
+});
+
+let p = await res.json();
+pacienteAtual = p;
+
+listarPacientes();
+}
+
+function selecionarPaciente(id,nome){
+pacienteAtual = {id,nome};
+
+app.innerHTML = 
+<div class="card">
+<h2>\</h2>
+<button onclick="nav('anamnese')">Nova Anamnese</button>
+<button onclick="verProntuario('\')">Prontuário</button>
+</div>;
+}
+
+async function salvarFluxoCompleto(){
+if(!pacienteAtual){
+alert('Selecione paciente');
+return;
+}
+
+await salvarAnamnese(respostas);
+
+let res = await fetch('/sinclin-ai-clinico',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({respostas})
+});
+
+let data = await res.json();
+
+await fetch('/data/prontuarios',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({
+pacienteId:pacienteAtual.id,
+nome:pacienteAtual.nome,
+respostas,
+analise:data.result,
+data:new Date()
+})
+});
+
+await fetch('/data/financeiro',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({
+pacienteId:pacienteAtual.id,
+valor:500,
+tipo:'procedimento'
+})
+});
+
+await fetch('/data/estoque',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({
+item:'procedimento_utilizado',
+data:new Date()
+})
+});
+
+app.innerHTML = 
+<div class="card">
+<h2>Atendimento registrado</h2>
+<p>\</p>
+</div>;
+}
+
+async function verProntuario(id){
+let res = await fetch('/data/prontuarios');
+let data = await res.json();
+
+let html = '<h2>Prontuário</h2><div class=\"card timeline\">';
+
+data.filter(p=>p.pacienteId===id).forEach(p=>{
+html += <div class=\"item\"><b>\</b><br>\</div>;
+});
+
+html += '</div>';
+app.innerHTML = html;
+}
+
+</script>
+
+

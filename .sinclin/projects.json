@@ -1,0 +1,9 @@
+{
+    "projects":  [
+                     {
+                         "api":  "https://sinclin-core.onrender.com/api/ia",
+                         "path":  "C:\\Users\\home\\sinclin\\core_auto",
+                         "name":  "SINCLIN_CORE"
+                     }
+                 ]
+}

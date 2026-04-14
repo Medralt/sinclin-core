@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>SINCLIN</title>
+<style>
+body { font-family: Arial; background:#111; color:#eee; padding:20px;}
+.ok {color:#0f0}
+.err {color:#f00}
+.warn {color:#ff0}
+button {padding:10px; margin:10px;}
+</style>
+</head>
+<body>
+
+<h1>SINCLIN</h1>
+
+<div id="status"></div>
+
+<button onclick="runCheck()">Atualizar</button>
+<button onclick="startVoice()">?? Voz</button>
+
+<script>
+async function loadState(){
+    try{
+        let res = await fetch('/.sinclin/state.json');
+        let data = await res.json();
+        render(data);
+    }catch(e){
+        document.getElementById('status').innerHTML = 'Erro ao carregar estado';
+    }
+}
+
+function render(data){
+    let html='';
+    for(let k in data){
+        let v = data[k];
+        let cls = 'ok';
+        if(v.includes('ERRO')||v.includes('OFFLINE')) cls='err';
+        if(v.includes('DIVERGENTE')) cls='warn';
+        html += <div class="\">\ENV: \</div>;
+    }
+    document.getElementById('status').innerHTML = html;
+}
+
+function runCheck(){
+    fetch('/sinclin-run').then(()=>setTimeout(loadState,1000));
+}
+
+function startVoice(){
+    const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+    rec.lang='pt-BR';
+    rec.start();
+    rec.onresult = e=>{
+        let txt = e.results[0][0].transcript.toLowerCase();
+
+        if(txt.includes('estado')){
+            runCheck();
+            speak('Atualizando estado');
+        }
+
+        if(txt.includes('erro')){
+            speak('Analisando sistema');
+            runCheck();
+        }
+    };
+}
+
+function speak(text){
+    let msg = new SpeechSynthesisUtterance(text);
+    speechSynthesis.speak(msg);
+}
+
+loadState();
+</script>
+
+</body>
+</html>

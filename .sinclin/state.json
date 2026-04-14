@@ -1,0 +1,8 @@
+{
+    "DEP":  "DEPENDENCIAS_OK",
+    "FRONT":  "FRONTEND_ATIVO",
+    "ROOT":  "ROOT_OK",
+    "GIT":  "GIT_OK",
+    "API":  "API_OK",
+    "ENV":  "ENV_ATIVA"
+}
