@@ -1,0 +1,43 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta charset='UTF-8'>
+<title>SINCLIN PRO</title>
+<link rel='stylesheet' href='css/style.css'>
+</head>
+
+<body>
+
+<h1>SINCLIN PRO</h1>
+
+<div class='grid'>
+
+<div class='card'>
+<h2>Cadastro</h2>
+<input id='nome' placeholder='Nome'>
+<input id='idade' placeholder='Idade'>
+<input id='sexo' placeholder='Sexo'>
+<button onclick='cadastrar()'>Cadastrar</button>
+</div>
+
+<div class='card'>
+<h2>IA Clínica</h2>
+<textarea id='pergunta'></textarea>
+<button onclick='enviar()'>Enviar</button>
+<button onclick='voz()'>🎤 Voz</button>
+</div>
+
+<div class='card'>
+<h2>Pacientes</h2>
+<div id='lista'></div>
+</div>
+
+</div>
+
+<h2>Resposta</h2>
+<div id='resposta'></div>
+
+<script src='/js/app.js'></script>
+
+</body>
+</html>
