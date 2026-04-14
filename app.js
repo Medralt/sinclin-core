@@ -81,6 +81,13 @@ app.post('/sinclin-auth',(req,res)=>{
 });
 
 app.post('/sinclin-ai-clinico', async (req, res) => {
+
+    if (!process.env.OPENAI_API_KEY) {
+        return res.json({
+            result: "IA temporariamente indisponivel"
+        });
+    }
+
     try {
         const { respostas } = req.body;
 
@@ -129,3 +136,4 @@ Gere:
 app.listen(3000, () => {
     console.log("SINCLIN_BACKEND_OK_PORT_3000");
 });
+

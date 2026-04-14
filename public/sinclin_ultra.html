@@ -82,6 +82,15 @@ let res = await fetch('/sinclin-ai-clinico',{
 method:'POST',
 headers:{'Content-Type':'application/json'},
 body:JSON.stringify({respostas})
+})
+.then(r=>r.json())
+.then(data=>{
+app.innerHTML = <div class="card"><h2>Resultado IA</h2><p>\</p></div>;
+})
+.catch(e=>{
+app.innerHTML = "<div class='card'>Sistema temporariamente indisponivel</div>";
+});,
+body:JSON.stringify({respostas})
 });
 
 let data = await res.json();
@@ -134,6 +143,15 @@ await salvarAnamnese(respostas);
 let res = await fetch('/sinclin-ai-clinico',{
 method:'POST',
 headers:{'Content-Type':'application/json'},
+body:JSON.stringify({respostas})
+})
+.then(r=>r.json())
+.then(data=>{
+app.innerHTML = <div class="card"><h2>Resultado IA</h2><p>\</p></div>;
+})
+.catch(e=>{
+app.innerHTML = "<div class='card'>Sistema temporariamente indisponivel</div>";
+});,
 body:JSON.stringify({respostas})
 });
 
@@ -226,6 +244,15 @@ await salvarAnamnese(respostas);
 let res = await fetch('/sinclin-ai-clinico',{
 method:'POST',
 headers:{'Content-Type':'application/json'},
+body:JSON.stringify({respostas})
+})
+.then(r=>r.json())
+.then(data=>{
+app.innerHTML = <div class="card"><h2>Resultado IA</h2><p>\</p></div>;
+})
+.catch(e=>{
+app.innerHTML = "<div class='card'>Sistema temporariamente indisponivel</div>";
+});,
 body:JSON.stringify({respostas})
 });
 
@@ -356,6 +383,15 @@ let res = await fetch('/sinclin-ai-clinico',{
 method:'POST',
 headers:{'Content-Type':'application/json'},
 body:JSON.stringify({respostas})
+})
+.then(r=>r.json())
+.then(data=>{
+app.innerHTML = <div class="card"><h2>Resultado IA</h2><p>\</p></div>;
+})
+.catch(e=>{
+app.innerHTML = "<div class='card'>Sistema temporariamente indisponivel</div>";
+});,
+body:JSON.stringify({respostas})
 });
 
 let data = await res.json();
@@ -448,6 +484,15 @@ let res = await fetch('/sinclin-ai-clinico',{
 method:'POST',
 headers:{'Content-Type':'application/json'},
 body:JSON.stringify({respostas})
+})
+.then(r=>r.json())
+.then(data=>{
+app.innerHTML = <div class="card"><h2>Resultado IA</h2><p>\</p></div>;
+})
+.catch(e=>{
+app.innerHTML = "<div class='card'>Sistema temporariamente indisponivel</div>";
+});,
+body:JSON.stringify({respostas})
 });
 
 let data = await res.json();
@@ -505,5 +550,6 @@ app.innerHTML = html;
 }
 
 </script>
+
 
 
