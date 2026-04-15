@@ -32,7 +32,8 @@ app.get('/data/:type',(req,res)=>{
 
 app.post('/data/pacientes',(req,res)=>{
     try{
-        let d = read('pacientes.json');
+        let file='pacientes.json';
+        let d = read(file);
 
         let novo = {
             id: randomUUID(),
@@ -41,7 +42,7 @@ app.post('/data/pacientes',(req,res)=>{
         };
 
         d.push(novo);
-        write('pacientes.json',d);
+        write(file,d);
 
         res.json(novo);
     }catch(e){
@@ -61,27 +62,56 @@ app.post('/data/:type',(req,res)=>{
     }
 });
 
+let SINCLIN_USER = { nivel: "GUEST" };
+
+app.post('/sinclin-auth',(req,res)=>{
+    const { nome } = req.body;
+
+    if(nome && nome.toLowerCase().includes("marino")){
+        SINCLIN_USER = { nivel:"MASTER", nome:"Dr. Marino" };
+        return res.json({status:"MASTER_OK"});
+    }
+
+    if(nome && nome.toLowerCase().includes("marilda")){
+        SINCLIN_USER = { nivel:"OPERACIONAL", nome:"Marilda" };
+        return res.json({status:"USER_OK"});
+    }
+
+    res.json({status:"NEGADO"});
+});
+
 app.post('/sinclin-ai-clinico', async (req, res) => {
+
+    if (!process.env.OPENAI_API_KEY) {
+        return res.json({
+            result: "IA temporariamente indisponivel"
+        });
+    }
+
     try {
-
-        if (!process.env.OPENAI_API_KEY) {
-            return res.json({ result: "IA temporariamente indisponivel" });
-        }
-
         const { respostas } = req.body;
 
-        const prompt = `
+        const prompt = 
 Analise clinica estetica:
-\${JSON.stringify(respostas)}
 
-Contexto:
+
+Contexto do profissional:
 Dr Marino Mende Macedo
+Formacao:
+- Sociologo
+- Historia e Geografia
+- Psicologia
+- Psicanalise Lacaniana
+- Biomedicina Estetica
+- Saude Integrativa
+- Disbiose Funcional
+- Ortomolecular
 
 Gere:
 - padrao clinico
 - sugestao de tratamento
 - nivel de gravidade
-`;
+;
 
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
@@ -96,18 +126,18 @@ Gere:
         });
 
         const data = await response.json();
-
-        res.json({
-            result: data?.choices?.[0]?.message?.content || "Sem resposta IA"
-        });
+        res.json({ result: data.choices[0].message.content });
 
     } catch (e) {
-        res.json({ result: "Erro IA" });
+        res.status(500).json({ error: "IA_FAIL" });
     }
 });
 
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
     console.log("SINCLIN_BACKEND_OK_PORT_" + PORT);
+}); => {
+    console.log("SINCLIN_BACKEND_OK_PORT_3000");
 });
+
+

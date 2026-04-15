@@ -70,9 +70,9 @@ app.post('/sinclin-ai-clinico', async (req, res) => {
 
         const { respostas } = req.body;
 
-        const prompt = `
+        const prompt = 
 Analise clinica estetica:
-\${JSON.stringify(respostas)}
+
 
 Contexto:
 Dr Marino Mende Macedo
@@ -81,7 +81,7 @@ Gere:
 - padrao clinico
 - sugestao de tratamento
 - nivel de gravidade
-`;
+;
 
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
             method: "POST",
