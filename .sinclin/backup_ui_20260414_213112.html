@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>SINCLIN ULTRA</title>
+
+<style>
+body {margin:0;font-family:Arial;background:#0f172a;color:#fff;}
+.sidebar {width:260px;position:fixed;height:100%;background:#111827;padding:20px;}
+.sidebar h2 {margin-bottom:20px;}
+.sidebar div {margin:10px 0;cursor:pointer;}
+.main {margin-left:260px;padding:30px;}
+.card {background:#1f2937;padding:20px;border-radius:12px;margin-bottom:20px;}
+button {padding:10px;background:#2563eb;color:#fff;border:none;margin-top:10px;cursor:pointer;}
+input {width:100%;padding:10px;margin-top:10px;}
+.item {margin:10px 0;padding:10px;background:#374151;}
+</style>
+
+</head>
+<body>
+
+<div class="sidebar">
+<h2>SINCLIN</h2>
+<div onclick="listarPacientes()">Pacientes</div>
+<div onclick="novaAnamnese()">Nova Anamnese</div>
+</div>
+
+<div class="main" id="app"></div>
+
+<script>
+
+let respostas = {};
+let pacienteAtual = null;
+let step = 0;
+
+function render(html){
+document.getElementById('app').innerHTML = html;
+}
+
+async function listarPacientes(){
+let res = await fetch('/data/pacientes');
+let data = await res.json();
+
+let html = '<div class="card"><h2>Pacientes</h2>';
+html += '<input id="nome"><button onclick="criarPaciente()">Criar</button>';
+
+data.forEach(p=>{
+html += '<div class="item" onclick="selecionarPaciente('+p.id+','+p.nome+')">'+p.nome+'</div>';
+});
+
+html += '</div>';
+render(html);
+}
+
+async function criarPaciente(){
+let nome = document.getElementById('nome').value;
+
+let res = await fetch('/data/pacientes',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({nome})
+});
+
+let p = await res.json();
+pacienteAtual = p;
+listarPacientes();
+}
+
+function selecionarPaciente(id,nome){
+pacienteAtual = {id,nome};
+render('<div class="card"><h2>'+nome+'</h2><button onclick="novaAnamnese()">Nova Anamnese</button><button onclick="verProntuario()">Prontuário</button></div>');
+}
+
+function novaAnamnese(){
+step = 0;
+respostas = {};
+pergunta();
+}
+
+function pergunta(){
+let perguntas = [
+"Queixa principal?",
+"Tempo do problema?",
+"Já realizou tratamento?"
+];
+
+if(step < perguntas.length){
+render('<div class="card"><h2>'+perguntas[step]+'</h2><input id="r"><button onclick="next()">Continuar</button><button onclick="voz()">??</button></div>');
+}else{
+render('<div class="card"><h2>Finalizar</h2><button onclick="finalizar()">Gerar IA</button></div>');
+}
+}
+
+function next(){
+respostas[step] = document.getElementById('r').value;
+step++;
+pergunta();
+}
+
+function voz(){
+let rec = new(window.SpeechRecognition||window.webkitSpeechRecognition)();
+rec.lang='pt-BR';
+rec.start();
+rec.onresult = e=>{
+document.getElementById('r').value = e.results[0][0].transcript;
+};
+}
+
+async function finalizar(){
+render('<div class="card">Analisando...</div>');
+
+let res = await fetch('/sinclin-ai-clinico',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({respostas})
+});
+
+let data = await res.json();
+
+await fetch('/data/prontuarios',{
+method:'POST',
+headers:{'Content-Type':'application/json'},
+body:JSON.stringify({
+pacienteId:pacienteAtual?.id,
+nome:pacienteAtual?.nome,
+respostas,
+analise:data.result,
+data:new Date()
+})
+});
+
+render('<div class="card"><h2>Resultado IA</h2><p>'+data.result+'</p></div>');
+speak(data.result);
+}
+
+async function verProntuario(){
+let res = await fetch('/data/prontuarios');
+let data = await res.json();
+
+let html = '<div class="card"><h2>Prontuário</h2>';
+
+data.filter(p=>p.pacienteId===pacienteAtual.id).forEach(p=>{
+html += '<div class="item">'+p.data+'<br>'+p.analise+'</div>';
+});
+
+html += '</div>';
+render(html);
+}
+
+function speak(t){
+speechSynthesis.speak(new SpeechSynthesisUtterance(t));
+}
+
+listarPacientes();
+
+</script>
+
+</body>
+</html>

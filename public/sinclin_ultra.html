@@ -2,25 +2,121 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>SINCLIN ULTRA</title>
+<title>SINCLIN ULTRA AI</title>
 
 <style>
-body {margin:0;font-family:Arial;background:#0f172a;color:#fff;}
-.sidebar {width:260px;position:fixed;height:100%;background:#111827;padding:20px;}
-.sidebar h2 {margin-bottom:20px;}
-.sidebar div {margin:10px 0;cursor:pointer;}
-.main {margin-left:260px;padding:30px;}
-.card {background:#1f2937;padding:20px;border-radius:12px;margin-bottom:20px;}
-button {padding:10px;background:#2563eb;color:#fff;border:none;margin-top:10px;cursor:pointer;}
-input {width:100%;padding:10px;margin-top:10px;}
-.item {margin:10px 0;padding:10px;background:#374151;}
-</style>
+body {
+margin:0;
+font-family:Arial;
+background:linear-gradient(135deg,#0f172a,#020617);
+color:#fff;
+overflow:hidden;
+}
 
+.sidebar {
+width:260px;
+position:fixed;
+height:100%;
+background:rgba(15,23,42,0.9);
+backdrop-filter:blur(10px);
+padding:20px;
+box-shadow:0 0 30px rgba(0,0,0,0.5);
+}
+
+.sidebar h2 {
+margin-bottom:30px;
+font-size:22px;
+letter-spacing:1px;
+}
+
+.sidebar div {
+margin:15px 0;
+cursor:pointer;
+opacity:0.8;
+transition:0.3s;
+}
+
+.sidebar div:hover {
+opacity:1;
+transform:translateX(5px);
+}
+
+.main {
+margin-left:260px;
+padding:40px;
+height:100vh;
+overflow:auto;
+}
+
+.card {
+background:rgba(30,41,59,0.7);
+padding:25px;
+border-radius:16px;
+margin-bottom:20px;
+box-shadow:0 10px 40px rgba(0,0,0,0.6);
+animation:fade 0.4s ease;
+}
+
+@keyframes fade {
+from{opacity:0; transform:translateY(10px);}
+to{opacity:1; transform:translateY(0);}
+}
+
+input {
+width:100%;
+padding:12px;
+margin-top:15px;
+background:#020617;
+border:none;
+color:#fff;
+border-radius:8px;
+}
+
+button {
+margin-top:15px;
+padding:12px;
+background:linear-gradient(90deg,#2563eb,#7c3aed);
+border:none;
+color:#fff;
+border-radius:8px;
+cursor:pointer;
+transition:0.3s;
+}
+
+button:hover {
+transform:scale(1.05);
+}
+
+.item {
+padding:15px;
+margin:10px 0;
+background:#1e293b;
+border-radius:10px;
+cursor:pointer;
+transition:0.3s;
+}
+
+.item:hover {
+background:#334155;
+transform:scale(1.02);
+}
+
+.badge {
+padding:6px 10px;
+border-radius:6px;
+font-size:12px;
+}
+
+.alta {background:#dc2626;}
+.media {background:#f59e0b;}
+.baixa {background:#16a34a;}
+</style>
 </head>
+
 <body>
 
 <div class="sidebar">
-<h2>SINCLIN</h2>
+<h2>SINCLIN AI</h2>
 <div onclick="listarPacientes()">Pacientes</div>
 <div onclick="novaAnamnese()">Nova Anamnese</div>
 </div>
@@ -42,7 +138,8 @@ let res = await fetch('/data/pacientes');
 let data = await res.json();
 
 let html = '<div class="card"><h2>Pacientes</h2>';
-html += '<input id="nome"><button onclick="criarPaciente()">Criar</button>';
+html += '<input id="nome" placeholder="Nome do paciente">';
+html += '<button onclick="criarPaciente()">Criar paciente</button>';
 
 data.forEach(p=>{
 html += '<div class="item" onclick="selecionarPaciente('+p.id+','+p.nome+')">'+p.nome+'</div>';
@@ -61,14 +158,20 @@ headers:{'Content-Type':'application/json'},
 body:JSON.stringify({nome})
 });
 
-let p = await res.json();
-pacienteAtual = p;
+pacienteAtual = await res.json();
 listarPacientes();
 }
 
 function selecionarPaciente(id,nome){
 pacienteAtual = {id,nome};
-render('<div class="card"><h2>'+nome+'</h2><button onclick="novaAnamnese()">Nova Anamnese</button><button onclick="verProntuario()">Prontuário</button></div>');
+
+render(
+<div class="card">
+<h2></h2>
+<button onclick="novaAnamnese()">Nova Anamnese</button>
+<button onclick="verProntuario()">Prontuario</button>
+</div>
+);
 }
 
 function novaAnamnese(){
@@ -78,16 +181,35 @@ pergunta();
 }
 
 function pergunta(){
+
 let perguntas = [
-"Queixa principal?",
-"Tempo do problema?",
-"Já realizou tratamento?"
+"Qual a principal queixa estetica?",
+"O problema e recente ou cronico?",
+"Ja realizou procedimentos anteriores?",
+"O paciente relata dor ou sensibilidade?",
+"Existe impacto emocional?"
 ];
 
 if(step < perguntas.length){
-render('<div class="card"><h2>'+perguntas[step]+'</h2><input id="r"><button onclick="next()">Continuar</button><button onclick="voz()">??</button></div>');
+
+render(
+<div class="card">
+<h2></h2>
+<input id="r" placeholder="Responder...">
+<button onclick="next()">Continuar</button>
+<button onclick="voz()">?? Falar</button>
+</div>
+);
+
 }else{
-render('<div class="card"><h2>Finalizar</h2><button onclick="finalizar()">Gerar IA</button></div>');
+
+render(
+<div class="card">
+<h2>Finalizar analise</h2>
+<button onclick="finalizar()">Gerar Analise IA</button>
+</div>
+);
+
 }
 }
 
@@ -107,7 +229,8 @@ document.getElementById('r').value = e.results[0][0].transcript;
 }
 
 async function finalizar(){
-render('<div class="card">Analisando...</div>');
+
+render('<div class="card">Analisando com IA...</div>');
 
 let res = await fetch('/sinclin-ai-clinico',{
 method:'POST',
@@ -116,6 +239,11 @@ body:JSON.stringify({respostas})
 });
 
 let data = await res.json();
+
+let gravidade = "baixa";
+
+if(data.result.toLowerCase().includes("grave")) gravidade="alta";
+else if(data.result.toLowerCase().includes("moder")) gravidade="media";
 
 await fetch('/data/prontuarios',{
 method:'POST',
@@ -129,7 +257,14 @@ data:new Date()
 })
 });
 
-render('<div class="card"><h2>Resultado IA</h2><p>'+data.result+'</p></div>');
+render(
+<div class="card">
+<h2>Diagnostico Inteligente</h2>
+<div class="badge "></div>
+<p></p>
+</div>
+);
+
 speak(data.result);
 }
 
@@ -137,10 +272,10 @@ async function verProntuario(){
 let res = await fetch('/data/prontuarios');
 let data = await res.json();
 
-let html = '<div class="card"><h2>Prontuário</h2>';
+let html = '<div class="card"><h2>Prontuario</h2>';
 
 data.filter(p=>p.pacienteId===pacienteAtual.id).forEach(p=>{
-html += '<div class="item">'+p.data+'<br>'+p.analise+'</div>';
+html += '<div class="item">'+p.analise+'</div>';
 });
 
 html += '</div>';
